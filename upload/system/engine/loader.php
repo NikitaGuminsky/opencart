@@ -20,8 +20,8 @@ class Loader {
 	 *
 	 * @param    object  $registry
 	 */
-	public function __construct(\Opencart\System\Engine\Registry $registry) {
-		$this->registry = $registry;
+	public function __construct(\Opencart\System\Engine\Registry &$registry) {
+		$this->registry = &$registry;
 	}
 
 	/**
@@ -207,7 +207,7 @@ class Loader {
 	 *
 	 * @return	 object
 	 */
-	public function library(string $route, array &...$args): object {
+	public function library(string $route): object {
 		// Sanitize the call
 		$route = preg_replace('/[^a-zA-Z0-9_\/]/', '', $route);
 
@@ -219,12 +219,11 @@ class Loader {
 		$class = 'Opencart\System\Library\\' . str_replace(['_', '/'], ['', '\\'], ucwords($route, '_/'));
 
 		if (class_exists($class)) {
-			$proxy = new \Opencart\System\Engine\Proxy();
+			$proxy = new \Opencart\System\Engine\Proxy(); 
 
-				
-			foreach (get_class_vars($class) as $property) {
-				$proxy->{$property} = $class::$property;
-			} 
+			foreach (get_class_vars($class) as $property => $value) {
+				$proxy->{$property} = $value;
+			}
 
 			// Overriding libraries is a little harder so we have to use PHP's magic methods.
 			foreach (get_class_methods($class) as $method) {
@@ -368,23 +367,25 @@ class Loader {
 			
 			// Trigger the pre events
 			$result = $this->event->trigger('library/' . $trigger . '/before', [&$route, &$args]);
+			
 
 			if ($result) {
 				$output = $result;
 			} else {
-				// Create a key to store the model object
+				// Create a key to store the library object
 				$key = substr($route, 0, strrpos($route, '/'));
-
-				// Check if the model has already been initialised or not
-				if (!$this->registry->has($key)) {
+				$registry_key = 'library_' . str_replace('/', '_', $key);
+				
+				// Check if the library has already been initialised or not
+				if (!$this->registry->has($registry_key)) {
 					// Create the class name from the key
 					$class = 'Opencart\\System\\Library\\' . str_replace(['_', '/'], ['', '\\'], ucwords($key, '_/'));
 
 					$library = new $class($this->registry);
 
-					$this->registry->set($key, $library);
+					$this->registry->set($registry_key, $library);
 				} else {
-					$library = $this->registry->get($key);
+					$library = $this->registry->get($registry_key);
 				}
 
 				// Get the method to be used
