@@ -374,6 +374,7 @@ class Loader {
 			} else {
 				// Create a key to store the library object
 				$key = substr($route, 0, strrpos($route, '/'));
+				
 				$registry_key = 'library_' . str_replace('/', '_', $key);
 				
 				// Check if the library has already been initialised or not
