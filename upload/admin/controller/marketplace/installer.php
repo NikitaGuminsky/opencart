@@ -97,16 +97,20 @@ class Installer extends \Opencart\System\Engine\Controller {
 							'extension_id'          => 0,
 							'extension_download_id' => 0,
 							'name'                  => $install_info['name'],
-							'code'                  => $code,
+							'code'                  => $install_info['code'] ?? $code,
 							'version'               => $install_info['version'],
 							'author'                => $install_info['author'],
 							'link'                  => $install_info['link']
 						];
-
-						$this->model_setting_extension->addInstall($extension_data);
+						if (!$this->model_setting_extension->getInstallByCode($extension_data['code'])) {
+							$this->model_setting_extension->addInstall($extension_data);
+						}
 					}
 
 					$zip->close();
+					if (isset($install_info['code'])) {
+						rename($file, DIR_STORAGE . 'marketplace/' . $install_info['code'] . '.ocmod.zip');
+					}
 				}
 			}
 		}
@@ -258,11 +262,15 @@ class Installer extends \Opencart\System\Engine\Controller {
 				'extension_id'          => 0,
 				'extension_download_id' => 0,
 				'name'                  => $install_info['name'],
-				'code'              	=> basename($filename, '.ocmod.zip'),
+				'code'              	=> $install_info['code'] ?? basename($filename, '.ocmod.zip'),
 				'version'               => $install_info['version'],
 				'author'                => $install_info['author'],
 				'link'                  => $install_info['link']
 			];
+
+			if (isset($install_info['code'])) {
+				rename($file, DIR_STORAGE . 'marketplace/' . $install_info['code'] . '.ocmod.zip');
+			}
 
 			$this->load->model('setting/extension');
 
